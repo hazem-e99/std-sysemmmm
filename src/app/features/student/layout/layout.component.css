@@ -8,9 +8,4 @@
   margin-left: 250px;
   padding: 20px;
   background-color: #f5f6fa;
-  transition: margin-left 0.3s ease;
-}
-
-:host ::ng-deep app-student-sidebar.collapsed + .main-content {
-  margin-left: 70px;
 } 

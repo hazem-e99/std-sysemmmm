@@ -49,10 +49,14 @@ export class ExamsAddPage {
 
     if (startTime && duration) {
       const startDate = new Date(startTime);
-      const endDate = new Date(startDate.getTime() + duration * 60000); // Convert minutes to milliseconds
-      
-      // Format the end date to match datetime-local input format (YYYY-MM-DDThh:mm)
-      const endTime = endDate.toISOString().slice(0, 16);
+      const endDate = new Date(startDate.getTime() + duration * 60000);
+      // تنسيق التاريخ ليكون مناسبًا لـ datetime-local (YYYY-MM-DDTHH:mm) بتوقيت الجهاز المحلي
+      const year = endDate.getFullYear();
+      const month = String(endDate.getMonth() + 1).padStart(2, '0');
+      const day = String(endDate.getDate()).padStart(2, '0');
+      const hours = String(endDate.getHours()).padStart(2, '0');
+      const minutes = String(endDate.getMinutes()).padStart(2, '0');
+      const endTime = `${year}-${month}-${day}T${hours}:${minutes}`;
       this.examForm.patchValue({ endTime });
     }
   }
@@ -70,9 +74,12 @@ export class ExamsAddPage {
 
     this.loading.set(true);
     try {
+      let startTime = this.examForm.get('startTime')?.value;
+      let endTime = this.examForm.get('endTime')?.value;
       const formData = {
         ...this.examForm.value,
-        endTime: this.examForm.get('endTime')?.value
+        startTime,
+        endTime
       };
 
       console.log('Submitting data:', formData);

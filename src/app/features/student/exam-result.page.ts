@@ -489,7 +489,7 @@ export class ExamResultPage implements OnInit {
         this.exam = exam;
         console.log('Exam details:', exam);
         // Then get the latest submission for this exam
-        return this.http.get<any[]>(`${this.apiUrl}/exam_submissions?examId=${this.examId}&_sort=submittedAt&_order=desc&_limit=1`);
+        return this.http.get<any[]>(`${this.apiUrl}/results?examId=${this.examId}&_sort=submittedAt&_order=desc&_limit=1`);
       }),
       map(submissions => {
         if (!submissions || submissions.length === 0) {
@@ -555,23 +555,23 @@ export class ExamResultPage implements OnInit {
             });
 
             // Calculate score
-            const score = (correctAnswers / totalQuestions) * 100;
-            const passed = score >= this.exam.passingMarks;
+            const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+            const passed = !isNaN(score) && score >= (this.exam.passingMarks || 0);
 
             // Prepare detailed feedback
             const feedback = {
               ...submission,
-              score,
+              score: Math.round(score * 100) / 100, // Round to 2 decimal places
               passed,
               totalQuestions,
               correctAnswers,
               wrongAnswers: totalQuestions - correctAnswers - unansweredQuestions,
               unansweredQuestions,
               questions: questionsWithAnswers,
-              timeTaken: submission.timeTaken,
+              timeTaken: submission.timeTaken || 0,
               submittedAt: submission.submittedAt,
               examTitle: this.exam.title,
-              passingMarks: this.exam.passingMarks
+              passingMarks: this.exam.passingMarks || 0
             };
 
             console.log('Detailed exam feedback:', feedback);

@@ -55,6 +55,56 @@
     </div>
   </div>
 
+  <!-- Charts Section -->
+  <div class="charts-section">
+    <div class="chart-container">
+      <h3 class="chart-title">Grade Distribution</h3>
+      <apx-chart
+        [series]="scoreDistributionOptions.series"
+        [chart]="scoreDistributionOptions.chart"
+        [plotOptions]="scoreDistributionOptions.plotOptions"
+        [dataLabels]="scoreDistributionOptions.dataLabels"
+        [stroke]="scoreDistributionOptions.stroke"
+        [xaxis]="scoreDistributionOptions.xaxis"
+        [yaxis]="scoreDistributionOptions.yaxis"
+        [fill]="scoreDistributionOptions.fill"
+        [tooltip]="scoreDistributionOptions.tooltip"
+        [colors]="scoreDistributionOptions.colors"
+        [grid]="scoreDistributionOptions.grid">
+      </apx-chart>
+    </div>
+
+    <div class="chart-container">
+      <h3 class="chart-title">Performance Over Time</h3>
+      <apx-chart
+        [series]="performanceOverTimeOptions.series"
+        [chart]="performanceOverTimeOptions.chart"
+        [dataLabels]="performanceOverTimeOptions.dataLabels"
+        [stroke]="performanceOverTimeOptions.stroke"
+        [xaxis]="performanceOverTimeOptions.xaxis"
+        [yaxis]="performanceOverTimeOptions.yaxis"
+        [tooltip]="performanceOverTimeOptions.tooltip"
+        [fill]="performanceOverTimeOptions.fill"
+        [colors]="performanceOverTimeOptions.colors"
+        [grid]="performanceOverTimeOptions.grid">
+      </apx-chart>
+    </div>
+
+    <div class="chart-container">
+      <h3 class="chart-title">Pass and Fail Rate</h3>
+      <apx-chart
+        [series]="passFailOptions.series"
+        [chart]="passFailOptions.chart"
+        [labels]="passFailOptions.labels"
+        [colors]="passFailOptions.colors"
+        [plotOptions]="passFailOptions.plotOptions"
+        [dataLabels]="passFailOptions.dataLabels"
+        [legend]="passFailOptions.legend"
+        [tooltip]="passFailOptions.tooltip">
+      </apx-chart>
+    </div>
+  </div>
+
   <!-- Filters Section -->
   <div class="filters-section">
     <div class="search-box">
@@ -99,7 +149,7 @@
     <div class="table-responsive">
       <table class="results-table" *ngIf="filteredResults.length > 0; else noResults">
         <thead>
-      <tr>
+          <tr>
             <th>Student Name</th>
             <th>Exam Title</th>
             <th>Score</th>
@@ -107,12 +157,12 @@
             <th>Status</th>
             <th>Date</th>
             <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
+          </tr>
+        </thead>
+        <tbody>
           <tr *ngFor="let result of filteredResults">
-        <td>{{ result.studentName }}</td>
-        <td>{{ result.examTitle }}</td>
+            <td>{{ result.studentName }}</td>
+            <td>{{ result.examTitle }}</td>
             <td>{{ result.correctAnswers }}/{{ result.totalMarks }}</td>
             <td>{{ result.score | number:'1.0-1' }}%</td>
             <td>
@@ -129,18 +179,18 @@
                 <i class="fas fa-trash"></i>
               </button>
             </td>
-      </tr>
-    </tbody>
-  </table>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-  <ng-template #noResults>
+    <ng-template #noResults>
       <div class="no-results">
         <i class="fas fa-search"></i>
         <h3>No Results Found</h3>
         <p>Try adjusting your search or filter criteria</p>
       </div>
-  </ng-template>
+    </ng-template>
   </div>
 
   <!-- Result Details Modal -->
@@ -194,10 +244,6 @@
         <div class="detail-item">
           <label>Passing Score:</label>
           <span>{{ selectedResult.passingMarks }}%</span>
-        </div>
-        <div class="detail-item">
-          <label>Submission Date:</label>
-          <span>{{ selectedResult.timestamp | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
       </div>
     </div>

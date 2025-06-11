@@ -37,10 +37,10 @@ export class ExamService {
   }
 
   getExamSubmissions(): Observable<ExamSubmission[]> {
-    return this.http.get<ExamSubmission[]>(`${this.apiUrl}/exam_submissions`);
+    return this.http.get<ExamSubmission[]>(`${this.apiUrl}/results`);
   }
 
   deleteExamSubmission(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/exam_submissions/${id}`);
+    return this.http.delete<void>(`${this.apiUrl}/results/${id}`);
   }
 } 

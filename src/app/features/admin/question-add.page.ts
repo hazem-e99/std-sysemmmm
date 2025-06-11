@@ -42,9 +42,13 @@ export class AdminQuestionAddPage implements OnInit {
   }
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.route.queryParams.subscribe(params => {
       if (params['examId']) {
         this.examId = params['examId'];
+        console.log('Exam ID:', this.examId);
+      } else {
+        console.error('No exam ID provided');
+        this.router.navigate(['/admin/exams']);
       }
     });
   }
@@ -71,7 +75,7 @@ export class AdminQuestionAddPage implements OnInit {
         option2: question.options[1],
         option3: question.options[2],
         option4: question.options[3],
-        correctOption: question.correctOption
+        correctOption: question.correctOption.toString()
       });
     }
   }
@@ -87,7 +91,7 @@ export class AdminQuestionAddPage implements OnInit {
           formValue.option3,
           formValue.option4
         ],
-        correctOption: formValue.correctOption,
+        correctOption: parseInt(formValue.correctOption),
         examId: this.examId
       };
     }
@@ -101,8 +105,8 @@ export class AdminQuestionAddPage implements OnInit {
         this.loadCurrentQuestion();
       } else {
         this.saveAllQuestions();
+      }
     }
-  }
   }
 
   previousQuestion() {
@@ -114,15 +118,45 @@ export class AdminQuestionAddPage implements OnInit {
   }
 
   saveAllQuestions() {
-    this.http.post('http://localhost:3000/questions', this.questions).subscribe({
-        next: () => {
-          this.router.navigate(['/admin/exams']);
-        },
-        error: (error) => {
-          console.error('Error saving questions:', error);
-        }
+    // Save questions one by one
+    const saveQuestion = (index: number): Promise<void> => {
+      if (index >= this.questions.length) {
+        return Promise.resolve();
+      }
+
+      const question = {
+        ...this.questions[index],
+        correctOption: parseInt(this.questions[index].correctOption.toString())
+      };
+
+      return new Promise((resolve, reject) => {
+        this.http.post('http://localhost:3000/questions', question).subscribe({
+          next: () => {
+            resolve();
+          },
+          error: (error) => {
+            console.error(`Error saving question ${index + 1}:`, error);
+            reject(error);
+          }
+        });
       });
-    }
+    };
+
+    // Save all questions sequentially
+    const saveAll = async () => {
+      try {
+        for (let i = 0; i < this.questions.length; i++) {
+          await saveQuestion(i);
+        }
+        this.router.navigate(['/admin/exams']);
+      } catch (error) {
+        console.error('Error saving questions:', error);
+        alert('Failed to save some questions. Please try again.');
+      }
+    };
+
+    saveAll();
+  }
 
   isLastQuestion(): boolean {
     return this.currentQuestionIndex === this.questions.length - 1;

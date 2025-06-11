@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { NgApexchartsModule } from 'ng-apexcharts';
 import { switchMap, map } from 'rxjs/operators';
 import { ExamService, Exam, ExamSubmission } from '../../core/services/exam.service';
 import { AuthService, User } from '../../core/services/auth.service';
@@ -28,7 +29,7 @@ interface Result {
 @Component({
   selector: 'app-admin-results',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, FormsModule, RouterModule],
+  imports: [CommonModule, HttpClientModule, FormsModule, RouterModule, NgApexchartsModule],
   templateUrl: './results.page.html',
   styleUrls: ['./results.page.css']
 })
@@ -54,6 +55,232 @@ export class AdminResultsPage implements OnInit {
   showModal = false;
   selectedResult: Result | null = null;
 
+  // Chart Options
+  scoreDistributionOptions: any = {
+    series: [{
+      name: 'Number of Students',
+      data: [0, 0, 0, 0, 0]
+    }],
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: false
+      }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 10,
+        dataLabels: {
+          position: 'top',
+        },
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val: number) {
+        return val;
+      },
+      offsetY: -20,
+      style: {
+        fontSize: '12px',
+        colors: ["#304758"]
+      }
+    },
+    xaxis: {
+      categories: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+      position: 'bottom',
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false
+      },
+      crosshairs: {
+        fill: {
+          type: 'gradient',
+          gradient: {
+            colorFrom: '#D8E3F0',
+            colorTo: '#BED1E6',
+            stops: [0, 100],
+            opacityFrom: 0.4,
+            opacityTo: 0.5,
+          }
+        }
+      },
+      tooltip: {
+        enabled: true,
+      }
+    },
+    yaxis: {
+      axisBorder: {
+        show: false
+      },
+      axisTicks: {
+        show: false,
+      },
+      labels: {
+        show: false,
+        formatter: function (val: number) {
+          return val;
+        }
+      }
+    },
+    title: {
+      text: 'Score Distribution',
+      floating: true,
+      offsetY: 330,
+      align: 'center',
+      style: {
+        color: '#444'
+      }
+    },
+    colors: ['#2196F3'],
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shade: 'light',
+        type: "horizontal",
+        shadeIntensity: 0.25,
+        gradientToColors: undefined,
+        inverseColors: true,
+        opacityFrom: 1,
+        opacityTo: 0.85,
+        stops: [50, 100, 100, 100]
+      },
+    }
+  };
+
+  performanceOverTimeOptions: any = {
+    series: [{
+      name: 'Average Score',
+      data: []
+    }],
+    chart: {
+      height: 350,
+      type: 'area',
+      toolbar: {
+        show: false
+      }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2
+    },
+    xaxis: {
+      categories: [],
+      type: 'datetime',
+      labels: {
+        datetimeUTC: false
+      }
+    },
+    yaxis: {
+      min: 0,
+      max: 100,
+      tickAmount: 5,
+      labels: {
+        formatter: function(val: number) {
+          return val + '%';
+        }
+      }
+    },
+    tooltip: {
+      x: {
+        format: 'dd MMM yyyy'
+      }
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.7,
+        opacityTo: 0.9,
+        stops: [0, 90, 100]
+      }
+    },
+    colors: ['#2E7D32'],
+    title: {
+      text: 'Performance Over Time',
+      align: 'center',
+      style: {
+        color: '#444'
+      }
+    }
+  };
+
+  passFailOptions: any = {
+    series: [0, 0],
+    chart: {
+      type: 'donut',
+      height: 350
+    },
+    labels: ['Passed', 'Failed'],
+    colors: ['#2E7D32', '#C62828'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          labels: {
+            show: true,
+            name: {
+              show: true,
+              fontSize: '22px',
+              fontFamily: 'Helvetica, Arial, sans-serif',
+              fontWeight: 600,
+              offsetY: -10,
+              formatter: function (val: string) {
+                return val;
+              }
+            },
+            value: {
+              show: true,
+              fontSize: '16px',
+              fontFamily: 'Helvetica, Arial, sans-serif',
+              fontWeight: 400,
+              offsetY: 16,
+              formatter: function (val: number) {
+                return val;
+              }
+            },
+            total: {
+              show: true,
+              label: 'Total',
+              fontSize: '16px',
+              fontWeight: 600,
+              formatter: function (w: any) {
+                return w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
+              }
+            }
+          }
+        }
+      }
+    },
+    title: {
+      text: 'Pass/Fail Distribution',
+      align: 'center',
+      style: {
+        color: '#444'
+      }
+    },
+    legend: {
+      position: 'bottom'
+    },
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: {
+          width: 200
+        },
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }]
+  };
+
   private apiUrl: string = 'http://localhost:3000';
 
   constructor(
@@ -63,15 +290,7 @@ export class AdminResultsPage implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadExams();
     this.loadResults();
-  }
-
-  loadExams() {
-    this.http.get<Exam[]>('http://localhost:3000/exams').subscribe(exams => {
-      this.exams = exams;
-      this.totalExams = exams.length;
-    });
   }
 
   async loadResults() {
@@ -96,6 +315,9 @@ export class AdminResultsPage implements OnInit {
         this.exams = exams;
       }
 
+      // Update chart data
+      this.updateChartData();
+
       // Apply initial filters
       this.applyFilters();
     } catch (error) {
@@ -104,6 +326,36 @@ export class AdminResultsPage implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  updateChartData() {
+    // Update Score Distribution
+    const distribution = [0, 0, 0, 0, 0];
+    this.results.forEach(result => {
+      const score = result.score;
+      if (score <= 20) distribution[0]++;
+      else if (score <= 40) distribution[1]++;
+      else if (score <= 60) distribution[2]++;
+      else if (score <= 80) distribution[3]++;
+      else distribution[4]++;
+    });
+    this.scoreDistributionOptions.series[0].data = distribution;
+
+    // Update Performance Over Time
+    const sortedResults = [...this.results].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
+    const dates = sortedResults.map(r => new Date(r.timestamp).getTime());
+    const scores = sortedResults.map(r => r.score);
+    
+    this.performanceOverTimeOptions.xaxis.categories = dates;
+    this.performanceOverTimeOptions.series[0].data = scores;
+
+    // Update Pass/Fail Distribution
+    const passed = this.results.filter(r => r.passed).length;
+    const failed = this.results.length - passed;
+    this.passFailOptions.series = [passed, failed];
   }
 
   calculateStatistics() {

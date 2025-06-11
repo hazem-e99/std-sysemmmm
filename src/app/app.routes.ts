@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { AuthService } from './core/services/auth.service';
+import { inject } from '@angular/core';
 import { LoginPage } from './features/auth/login.page';
 import { RegisterPage } from './features/auth/register.page';
 import { ExamsPage } from './features/student/exams.page';
@@ -17,12 +19,59 @@ import { NotFoundComponent } from './not-found/not-found.component';
 import { AdminLayoutComponent } from './features/admin/layout/layout.component';
 import { StudentLayoutComponent } from './features/student/layout/layout.component';
 
+const authGuard = () => {
+  const authService = inject(AuthService);
+  if (authService.isAuthenticated()) {
+    return true;
+  }
+  return authService.router.createUrlTree(['/login']);
+};
+
+const adminGuard = () => {
+  const authService = inject(AuthService);
+  if (authService.isAuthenticated() && authService.isAdmin()) {
+    return true;
+  }
+  return authService.router.createUrlTree(['/login']);
+};
+
+const studentGuard = () => {
+  const authService = inject(AuthService);
+  if (authService.isAuthenticated() && authService.isStudent()) {
+    return true;
+  }
+  return authService.router.createUrlTree(['/login']);
+};
+
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', component: LoginPage },
-  { path: 'register', component: RegisterPage },
+  {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login.page').then(m => m.LoginPage)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register.page').then(m => m.RegisterPage)
+  },
+  {
+    path: 'admin',
+    canActivate: [adminGuard],
+    component: AdminLayoutComponent,
+    children: [
+      { path: '', component: AdminDashboardPage },
+      { path: 'login', component: AdminLoginPage },
+      { path: 'exams', component: AdminExamsPage },
+      { path: 'exams/add', component: ExamsAddPage },
+      { path: 'exams/edit/:id', component: ExamsEditPage },
+      { path: 'questions', component: AdminQuestionsPage },
+      { path: 'questions/add', component: AdminQuestionAddPage },
+      { path: 'questions/edit', component: QuestionEditPage },
+      { path: 'results', component: AdminResultsPage }
+    ]
+  },
   {
     path: 'student',
+    canActivate: [studentGuard],
     component: StudentLayoutComponent,
     children: [
       { path: '', redirectTo: 'exams', pathMatch: 'full' },
@@ -30,21 +79,6 @@ export const routes: Routes = [
       { path: 'exams/:examId', component: TakeExamPage },
       { path: 'results', component: ResultsPage },
       { path: 'exams/:examId/result', loadComponent: () => import('./features/student/exam-result.page').then(m => m.ExamResultPage) }
-    ]
-  },
-{
-  path: 'admin',
-    component: AdminLayoutComponent,
-  children: [
-    { path: '', component: AdminDashboardPage },
-    { path: 'login', component: AdminLoginPage },
-        { path: 'exams', component: AdminExamsPage },
-            { path: 'exams/add', component: ExamsAddPage },
-                { path: 'exams/edit/:id', component: ExamsEditPage },
-                    { path: 'questions', component: AdminQuestionsPage },
-                        { path: 'questions/add', component: AdminQuestionAddPage },
-                            { path: 'questions/edit', component: QuestionEditPage },
-      { path: 'results', component: AdminResultsPage }
     ]
   },
   { path: '**', component: NotFoundComponent }

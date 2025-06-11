@@ -1,13 +1,9 @@
-<div class="sidebar" [class.collapsed]="isCollapsed">
-  <button class="toggle-btn" (click)="toggleSidebar()">
-    <i class="fas" [class.fa-chevron-left]="!isCollapsed" [class.fa-chevron-right]="isCollapsed"></i>
-  </button>
-
+<div class="sidebar">
   <div class="profile-section">
     <div class="profile-image">
       <i class="fas fa-user-graduate"></i>
     </div>
-    <div class="profile-info" *ngIf="!isCollapsed">
+    <div class="profile-info">
       <h3>{{ username }}</h3>
       <p>{{ role }}</p>
     </div>
@@ -16,30 +12,24 @@
   <nav class="sidebar-nav">
     <ul>
       <li>
-        <a routerLink="/student/exams" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" [title]="isCollapsed ? 'Available Exams' : ''">
+        <a routerLink="/student/exams" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
           <i class="fas fa-file-alt"></i>
-          <span *ngIf="!isCollapsed">Available Exams</span>
+          <span>Available Exams</span>
         </a>
       </li>
       <li>
-        <a routerLink="/student/results" routerLinkActive="active" [title]="isCollapsed ? 'My Results' : ''">
+        <a routerLink="/student/results" routerLinkActive="active">
           <i class="fas fa-chart-line"></i>
-          <span *ngIf="!isCollapsed">My Results</span>
-        </a>
-      </li>
-      <li>
-        <a routerLink="/student/profile" routerLinkActive="active" [title]="isCollapsed ? 'My Profile' : ''">
-          <i class="fas fa-user"></i>
-          <span *ngIf="!isCollapsed">My Profile</span>
+          <span>My Results</span>
         </a>
       </li>
     </ul>
   </nav>
 
   <div class="sidebar-footer">
-    <button (click)="logout()" class="logout-btn" [title]="isCollapsed ? 'Logout' : ''">
+    <button (click)="logout()" class="logout-btn">
       <i class="fas fa-sign-out-alt"></i>
-      <span *ngIf="!isCollapsed">Logout</span>
+      <span>Logout</span>
     </button>
   </div>
 </div> 

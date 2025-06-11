@@ -39,8 +39,12 @@ export class AdminQuestionsPage implements OnInit {
   addForm: FormGroup;
   currentExamId: string | null = null;
   
-  // Filter properties
-  searchTerm: string = '';
+  // Enhanced filter properties
+  selectedExamId: string = '';
+  minMarks: number = 0;
+  maxMarks: number = 100;
+  sortBy: 'marks' | 'exam' | 'none' = 'none';
+  sortDirection: 'asc' | 'desc' = 'asc';
   isFiltered: boolean = false;
 
   constructor(
@@ -97,7 +101,8 @@ export class AdminQuestionsPage implements OnInit {
       this.loadExams().then(() => {
         this.loadQuestions();
         if (this.currentExamId) {
-          this.addForm.patchValue({ examId: this.currentExamId });
+          this.addForm.get('examId')?.setValue(this.currentExamId);
+          this.editForm.get('examId')?.setValue(this.currentExamId);
         }
       });
     });
@@ -148,28 +153,70 @@ export class AdminQuestionsPage implements OnInit {
     return this.filteredQuestions.reduce((total, q) => total + q.marks, 0);
   }
 
-  filterQuestions(event: Event) {
-    this.searchTerm = (event.target as HTMLInputElement).value.toLowerCase();
+  applyFilters() {
+    this.filteredQuestions = this.questions.filter(question => {
+      const matchesExam = !this.selectedExamId || 
+        question.examId === this.selectedExamId;
+
+      const matchesMarks = question.marks >= this.minMarks && 
+        question.marks <= this.maxMarks;
+
+      return matchesExam && matchesMarks;
+    });
+
+    // Apply sorting
+    if (this.sortBy !== 'none') {
+      this.filteredQuestions.sort((a, b) => {
+        let comparison = 0;
+        switch (this.sortBy) {
+          case 'marks':
+            comparison = a.marks - b.marks;
+            break;
+          case 'exam':
+            comparison = this.getExamTitle(a.examId).localeCompare(this.getExamTitle(b.examId));
+            break;
+        }
+        return this.sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    this.isFiltered = this.selectedExamId !== '' || 
+                     this.minMarks > 0 || 
+                     this.maxMarks < 100 ||
+                     this.sortBy !== 'none';
+  }
+
+  filterByExam(event: Event) {
+    this.selectedExamId = (event.target as HTMLSelectElement).value;
     this.applyFilters();
   }
 
-  private applyFilters() {
-    this.filteredQuestions = this.questions.filter(question => {
-      const matchesSearch = !this.searchTerm || 
-        question.text.toLowerCase().includes(this.searchTerm) ||
-        this.getExamTitle(question.examId).toLowerCase().includes(this.searchTerm);
+  filterByMarksRange(event: Event, type: 'min' | 'max') {
+    const value = parseInt((event.target as HTMLInputElement).value) || 0;
+    if (type === 'min') {
+      this.minMarks = value;
+    } else {
+      this.maxMarks = value;
+    }
+    this.applyFilters();
+  }
 
-      const matchesExam = !this.currentExamId || 
-        question.examId === this.currentExamId;
-
-      return matchesSearch && matchesExam;
-    });
-
-    this.isFiltered = this.searchTerm !== '';
+  sortQuestions(criteria: 'marks' | 'exam' | 'none') {
+    if (this.sortBy === criteria) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = criteria;
+      this.sortDirection = 'asc';
+    }
+    this.applyFilters();
   }
 
   clearFilters() {
-    this.searchTerm = '';
+    this.selectedExamId = '';
+    this.minMarks = 0;
+    this.maxMarks = 100;
+    this.sortBy = 'none';
+    this.sortDirection = 'asc';
     this.applyFilters();
   }
 
@@ -177,22 +224,62 @@ export class AdminQuestionsPage implements OnInit {
     this.showAddForm = !this.showAddForm;
     if (this.showAddForm) {
       this.initializeOptions();
-      this.addForm.patchValue({
+      this.addForm.reset();
+      
+      // Set initial values
+      const initialValues: {
+        correctOption: number;
+        marks: number;
+        examId?: string;
+      } = {
         correctOption: 0,
-        examId: this.currentExamId || '',
         marks: 5
-      });
+      };
+
+      // Set examId if available
+      if (this.currentExamId) {
+        initialValues.examId = this.currentExamId;
+      }
+
+      // First set examId separately to ensure it's set
+      if (this.currentExamId) {
+        this.addForm.get('examId')?.setValue(this.currentExamId);
+      }
+
+      // Then set other values
+      this.addForm.patchValue(initialValues);
+      
+      // Force form validation update
+      this.addForm.updateValueAndValidity();
     }
   }
 
+  isFormValid(): boolean {
+    // Check if all required fields are filled
+    const text = this.addForm.get('text')?.value;
+    const options = this.getOptions(this.addForm).controls;
+    const correctOption = this.addForm.get('correctOption')?.value;
+    const marks = this.addForm.get('marks')?.value;
+    const examId = this.addForm.get('examId')?.value;
+
+    // Check if all required fields are valid
+    const isValid = !!text && 
+                   options.every(opt => !!opt.value.text) && 
+                   correctOption !== undefined && 
+                   marks >= 1 && 
+                   (!!examId || !!this.currentExamId);
+
+    return isValid;
+  }
+
   addQuestion() {
-    if (this.addForm.valid) {
+    if (this.isFormValid()) {
       const formValue = this.addForm.value;
       const questionData = {
         text: formValue.text,
         options: formValue.options.map((opt: any) => opt.text),
         correctOption: formValue.correctOption,
-        examId: formValue.examId,
+        examId: formValue.examId || this.currentExamId, // Use current exam ID if form value is empty
         marks: formValue.marks
       };
 
@@ -211,12 +298,26 @@ export class AdminQuestionsPage implements OnInit {
 
   startEdit(question: Question) {
     this.editingQuestion = question;
+    this.editForm.reset();
+    
+    // Initialize options array
+    const optionsArray = this.editForm.get('options') as FormArray;
+    optionsArray.clear();
+    for (let i = 0; i < 4; i++) {
+      optionsArray.push(this.createOptionForm());
+    }
+
+    // Set form values
     this.editForm.patchValue({
       text: question.text,
-      options: question.options.map(opt => ({ text: opt })),
       correctOption: question.correctOption,
       examId: question.examId,
       marks: question.marks
+    });
+
+    // Set options values
+    question.options.forEach((option, index) => {
+      optionsArray.at(index).patchValue({ text: option });
     });
   }
 

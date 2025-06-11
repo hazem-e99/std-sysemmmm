@@ -1,115 +1,189 @@
-<!-- Page Header -->
-<div class="page-header">
-  <div class="header-content">
-    <div>
-      <h1>Exam Results</h1>
-      <p class="text-muted">View your exam performance and progress</p>
-    </div>
-    <button class="delete-all-btn" (click)="confirmDeleteAll()" *ngIf="submissions.length > 0">
-      <i class="fas fa-trash"></i>
-      Delete All Results
-    </button>
-  </div>
-</div>
-
-<!-- Loading State -->
-<div class="loading" *ngIf="isLoading">
-  <div class="loading-content">
-    <i class="fas fa-spinner fa-spin"></i>
-    <h2>Loading Results</h2>
-    <p class="loading-subtext">Please wait...</p>
-  </div>
-</div>
-
-<!-- Error State -->
-<div class="error-state" *ngIf="error">
-  <div class="error-content">
-    <i class="fas fa-exclamation-circle"></i>
-    <h2>Error</h2>
-    <p>{{ error }}</p>
-    <button class="retry-btn" (click)="loadSubmissions()">
-      <i class="fas fa-redo"></i>
-      Retry
-    </button>
-  </div>
-</div>
-
-<!-- Results Content -->
-<ng-container *ngIf="!isLoading && !error">
-  <!-- Statistics Cards -->
-  <div class="stats-container">
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="fas fa-chart-line"></i>
-      </div>
-      <div class="stat-info">
-        <h3>{{ averageScore }}%</h3>
-        <p>Average Score</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="fas fa-trophy"></i>
-      </div>
-      <div class="stat-info">
-        <h3>{{ highestScore }}%</h3>
-        <p>Highest Score</p>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">
-        <i class="fas fa-file-alt"></i>
-      </div>
-      <div class="stat-info">
-        <h3>{{ totalExams }}</h3>
-        <p>Exams Taken</p>
+<!-- Main Container -->
+<div class="results-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1>Exam Results</h1>
+        <p class="text-muted">Track your academic progress and performance</p>
       </div>
     </div>
   </div>
 
-  <!-- Results Table -->
-  <div class="results-table" *ngIf="submissions.length > 0">
-    <table>
-      <thead>
-      <tr>
-        <th>Exam</th>
-          <th>Score</th>
-          <th>Status</th>
-          <th>Date</th>
-          <th>Time Taken</th>
-          <th>Details</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr *ngFor="let submission of submissions">
-          <td>{{ submission.examTitle }}</td>
-          <td>{{ submission.score }}%</td>
-          <td>
-            <span class="status-badge" [class]="getStatusClass(submission)">
-              {{ getStatusText(submission) }}
-            </span>
-          </td>
-          <td>{{ submission.submittedAt | date:'medium' }}</td>
-          <td>{{ submission.timeTaken }} minutes</td>
-          <td>
-            <a [routerLink]="['/student/exams', submission.examId, 'result']" class="view-details-btn">
-              <i class="fas fa-eye"></i>
-              View Details
-            </a>
-          </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-  <!-- No Results -->
-  <div class="no-results" *ngIf="submissions.length === 0">
-    <i class="fas fa-clipboard-list"></i>
-    <h3>No Results Yet</h3>
-    <p>Take your first exam to see your results here</p>
-    <a routerLink="/student/exams" class="start-exam-btn">
-      <i class="fas fa-play"></i>
-      Start an Exam
-    </a>
+  <!-- Loading State -->
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <h3>Loading Results</h3>
+      <p>Please wait while we fetch your exam data...</p>
+    </div>
   </div>
-</ng-container>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error">
+    <div class="error-content">
+      <i class="fas fa-exclamation-circle"></i>
+      <h3>Error Loading Results</h3>
+      <p>{{ error }}</p>
+      <button class="retry-btn" (click)="loadSubmissions()">
+        <i class="fas fa-redo"></i>
+        Try Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" *ngIf="!isLoading && !error">
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ averageScore }}%</h3>
+          <p>Average Score</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-trophy"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ highestScore }}%</h3>
+          <p>Highest Score</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-file-alt"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ totalExams }}</h3>
+          <p>Total Exams</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="stat-info">
+          <h3>{{ failedExams }}</h3>
+          <p>Failed Exams</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section" *ngIf="submissions.length > 0">
+      <div class="charts-grid">
+        <!-- Score Distribution Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Score Distribution</h3>
+            <p>Your scores across all exams</p>
+          </div>
+          <div class="chart-container">
+            <apx-chart
+              [series]="scoreDistributionChart.series"
+              [chart]="scoreDistributionChart.chart"
+              [plotOptions]="scoreDistributionChart.plotOptions"
+              [dataLabels]="scoreDistributionChart.dataLabels"
+              [xaxis]="scoreDistributionChart.xaxis"
+              [yaxis]="scoreDistributionChart.yaxis"
+              [colors]="scoreDistributionChart.colors">
+            </apx-chart>
+          </div>
+        </div>
+
+        <!-- Performance Trend Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Performance Trend</h3>
+            <p>Your progress over time</p>
+          </div>
+          <div class="chart-container">
+            <apx-chart
+              [series]="performanceChart.series"
+              [chart]="performanceChart.chart"
+              [stroke]="performanceChart.stroke"
+              [markers]="performanceChart.markers"
+              [xaxis]="performanceChart.xaxis"
+              [yaxis]="performanceChart.yaxis"
+              [colors]="performanceChart.colors">
+            </apx-chart>
+          </div>
+        </div>
+
+        <!-- Status Distribution Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>Exam Status</h3>
+            <p>Passed vs Failed exams</p>
+          </div>
+          <div class="chart-container">
+            <apx-chart
+              [series]="statusChart.series"
+              [chart]="statusChart.chart"
+              [labels]="statusChart.labels"
+              [colors]="statusChart.colors"
+              [legend]="statusChart.legend"
+              [responsive]="statusChart.responsive">
+            </apx-chart>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Table Section -->
+    <div class="results-section" *ngIf="submissions.length > 0">
+      <div class="section-header">
+        <h2>Exam History</h2>
+      </div>
+
+      <div class="table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Exam Title</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Time Taken</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let submission of submissions" [class.failed-exam]="submission.status === 'failed'">
+              <td>{{ submission.examTitle }}</td>
+              <td>
+                <div class="score-cell" [ngClass]="getScoreClass(submission.score)">
+                  {{ submission.status === 'failed' ? 'N/A' : submission.score + '%' }}
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(submission)">
+                  {{ getStatusText(submission) }}
+                </span>
+              </td>
+              <td>{{ submission.timestamp | date:'medium' }}</td>
+              <td>{{ getTimeTaken(submission) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- No Results State -->
+    <div class="no-results" *ngIf="submissions.length === 0">
+      <div class="no-results-content">
+        <i class="fas fa-clipboard-list"></i>
+        <h3>No Results Yet</h3>
+        <p>Take your first exam to see your results here</p>
+        <a routerLink="/student/exams" class="start-exam-btn">
+          <i class="fas fa-play"></i>
+          Start an Exam
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

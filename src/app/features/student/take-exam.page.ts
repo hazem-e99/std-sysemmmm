@@ -660,7 +660,7 @@ export class TakeExamPage implements OnInit, OnDestroy {
     this.isLoading = true;
     this.error = null;
 
-    // First, get the exam details to set the timer
+    // First, get the exam details to set the timer and backup questions
     this.http.get<any>(`${this.apiUrl}/exams/${this.examId}`).subscribe({
       next: (exam) => {
         if (!exam || !exam.duration) {
@@ -671,6 +671,7 @@ export class TakeExamPage implements OnInit, OnDestroy {
         this.timeLeft = exam.duration * 60;
         this.examDuration = exam.duration * 60;
         this.startTimer();
+        this.exam = exam; // احفظ بيانات الامتحان لاستخدام الأسئلة إذا لزم الأمر
       },
       error: (error) => {
         console.error('Error loading exam details:', error);
@@ -682,22 +683,32 @@ export class TakeExamPage implements OnInit, OnDestroy {
     // Then, get the questions
     this.http.get<any[]>(`${this.apiUrl}/questions?examId=${this.examId}`).subscribe({
       next: (rawQuestions) => {
-        console.log('Raw questions data:', rawQuestions);
-        
-        if (!Array.isArray(rawQuestions)) {
-          this.error = 'Invalid questions data';
-          this.isLoading = false;
-          return;
+        let questionsToUse = rawQuestions;
+        // إذا لم يجد أسئلة، جرب الأسئلة داخل كائن الامتحان
+        if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
+          if (this.exam && Array.isArray(this.exam.questions) && this.exam.questions.length > 0) {
+            questionsToUse = this.exam.questions.map((q: any, idx: number) => ({
+              id: String(q.id || idx + 1),
+              examId: String(this.examId),
+              questionText: String(q.text || q.questionText || ''),
+              type: String(q.type || 'multiple_choice'),
+              options: Array.isArray(q.options) ? q.options.map((opt: any, i: number) => ({
+                id: opt.id || i + 1,
+                text: opt.text || String(opt),
+                isCorrect: Boolean(opt.isCorrect)
+              })) : [],
+              marks: Number(q.marks || 5)
+            }));
+          } else {
+            questionsToUse = [];
+          }
         }
 
         // Transform and validate questions
-        this.questions = rawQuestions.map(q => {
-          // Ensure we have the basic question structure
+        this.questions = questionsToUse.map(q => {
           if (!q || typeof q !== 'object') {
             return null;
           }
-
-          // Process options
           let options = [];
           if (Array.isArray(q.options)) {
             options = q.options.map((opt: any, index: number) => {
@@ -715,26 +726,21 @@ export class TakeExamPage implements OnInit, OnDestroy {
               };
             });
           } else if (q.options) {
-            // Handle case where options might be a string or other format
             options = [{
               id: 1,
               text: String(q.options),
               isCorrect: false
             }];
           }
-
-          // Return the processed question
           return {
             id: String(q.id || ''),
-            examId: String(q.examId || ''),
+            examId: String(q.examId || this.examId),
             questionText: String(q.questionText || q.text || ''),
             type: String(q.type || 'multiple_choice'),
             options: options,
             marks: Number(q.marks || 5)
           };
         }).filter(q => q !== null) as Question[];
-
-        console.log('Transformed questions:', this.questions);
 
         if (this.questions.length === 0) {
           this.error = 'No questions found for this exam';
@@ -755,11 +761,34 @@ export class TakeExamPage implements OnInit, OnDestroy {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading questions:', error);
-        this.error = 'Failed to load questions';
-        this.isLoading = false;
+        // في حال فشل جلب الأسئلة من endpoint، جرب الأسئلة داخل كائن الامتحان
+        if (this.exam && Array.isArray(this.exam.questions) && this.exam.questions.length > 0) {
+          this.questions = this.exam.questions.map((q: any, idx: number) => ({
+            id: String(q.id || idx + 1),
+            examId: String(this.examId),
+            questionText: String(q.text || q.questionText || ''),
+            type: String(q.type || 'multiple_choice'),
+            options: Array.isArray(q.options) ? q.options.map((opt: any, i: number) => ({
+              id: opt.id || i + 1,
+              text: opt.text || String(opt),
+              isCorrect: Boolean(opt.isCorrect)
+            })) : [],
+            marks: Number(q.marks || 5)
+          }));
+          // Initialize form controls
+          this.questions.forEach(q => {
+            this.form.addControl(q.id, this.fb.control(''));
+          });
+          this.form.valueChanges.subscribe(() => {
+            this.answeredQuestions = Object.values(this.form.value).filter(v => v !== '').length;
+          });
+          this.isLoading = false;
+        } else {
+          this.error = 'Failed to load questions';
+          this.isLoading = false;
         }
-      });
+      }
+    });
   }
 
   startTimer() {
@@ -829,7 +858,7 @@ export class TakeExamPage implements OnInit, OnDestroy {
       submittedAt: new Date().toISOString()
     };
 
-    this.http.post<any>(`${this.apiUrl}/exam_submissions`, submissionData)
+    this.http.post<any>(`${this.apiUrl}/results`, submissionData)
       .pipe(
         finalize(() => {
           this.isSubmitting = false;

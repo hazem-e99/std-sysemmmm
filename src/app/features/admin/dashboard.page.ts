@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -49,18 +50,24 @@ export class AdminDashboardPage implements OnInit {
       this.calculateQuestionsTrend(questions);
     });
 
-    // Load total students
-    this.http.get<any[]>('http://localhost:3000/users').subscribe(users => {
-      this.totalStudents = users.filter(user => user.role === 'student').length;
-      this.calculateStudentsTrend(users);
+    // Load total students by combining admins and students
+    forkJoin({
+      admins: this.http.get<any[]>('http://localhost:3000/admins'),
+      students: this.http.get<any[]>('http://localhost:3000/students')
+    }).subscribe(({ admins, students }) => {
+      const allUsers = [...admins, ...students];
+      this.totalStudents = students.length; // Only count students
+      this.calculateStudentsTrend(allUsers);
     });
 
     // Load average score
     this.http.get<any[]>('http://localhost:3000/results').subscribe(results => {
-      if (results.length > 0) {
-        const totalScore = results.reduce((sum, result) => sum + result.score, 0);
+      if (results && results.length > 0) {
+        const totalScore = results.reduce((sum, result) => sum + (result.score || 0), 0);
         this.averageScore = Math.round((totalScore / results.length) * 100) / 100;
         this.calculateScoreTrend(results);
+      } else {
+        this.averageScore = 0;
       }
     });
   }

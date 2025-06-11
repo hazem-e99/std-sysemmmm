@@ -13,7 +13,6 @@ import { AuthService } from '../../../core/services/auth.service';
 export class AdminSidebarComponent implements OnInit {
   username: string = '';
   role: string = '';
-  isCollapsed: boolean = false;
 
   constructor(private authService: AuthService) {}
 
@@ -23,10 +22,6 @@ export class AdminSidebarComponent implements OnInit {
       this.username = currentUser.name;
       this.role = currentUser.role;
     }
-  }
-
-  toggleSidebar() {
-    this.isCollapsed = !this.isCollapsed;
   }
 
   logout() {

@@ -2,14 +2,20 @@
   <!-- Page Header -->
   <div class="page-header">
     <div class="header-content">
-      <div>
+      <div class="header-title">
         <h1>Exam Management</h1>
         <p class="text-muted">Create and manage your exams efficiently</p>
       </div>
-      <button class="add-btn" routerLink="/admin/exams/add">
-        <i class="material-icons">add</i>
-        Create New Exam
-      </button>
+      <div class="header-actions">
+        <div class="search-box">
+          <i class="material-icons">search</i>
+          <input type="text" placeholder="Search exams..." [(ngModel)]="searchQuery" (input)="filterExams()">
+        </div>
+        <button class="add-btn" routerLink="/admin/exams/add">
+          <i class="material-icons">add</i>
+          Create New Exam
+        </button>
+      </div>
     </div>
   </div>
 
@@ -23,6 +29,10 @@
         <h3>{{ totalExams }}</h3>
         <p>Total Exams</p>
       </div>
+      <div class="stat-trend" [class.positive]="examsGrowth > 0">
+        <i class="material-icons">{{ examsGrowth > 0 ? 'trending_up' : 'trending_down' }}</i>
+        <span>{{ examsGrowth }}%</span>
+      </div>
     </div>
     <div class="stat-card">
       <div class="stat-icon">
@@ -32,15 +42,47 @@
         <h3>{{ totalQuestions }}</h3>
         <p>Total Questions</p>
       </div>
+      <div class="stat-trend" [class.positive]="questionsGrowth > 0">
+        <i class="material-icons">{{ questionsGrowth > 0 ? 'trending_up' : 'trending_down' }}</i>
+        <span>{{ questionsGrowth }}%</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="material-icons">people</i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ totalStudents }}</h3>
+        <p>Active Students</p>
+      </div>
+      <div class="stat-trend" [class.positive]="studentsGrowth > 0">
+        <i class="material-icons">{{ studentsGrowth > 0 ? 'trending_up' : 'trending_down' }}</i>
+        <span>{{ studentsGrowth }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <div class="filter-group">
+      <label>Sort by:</label>
+      <select [(ngModel)]="sortBy" (change)="filterExams()">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+        <option value="title">Title</option>
+        <option value="duration">Duration</option>
+      </select>
     </div>
   </div>
 
   <!-- Exams Grid -->
   <div class="content-wrapper">
-    <div class="exams-grid" *ngIf="exams.length > 0; else emptyState">
-      <div class="exam-card" *ngFor="let exam of exams">
+    <div class="exams-grid" *ngIf="filteredExams.length > 0; else emptyState">
+      <div class="exam-card" *ngFor="let exam of filteredExams">
         <div class="exam-header">
-          <h3>{{ exam.title }}</h3>
+          <div class="exam-title">
+            <h3>{{ exam.title }}</h3>
+          </div>
           <div class="exam-actions">
             <button class="action-btn edit" [routerLink]="['/admin/exams/edit', exam.id]" title="Edit Exam">
               <i class="material-icons">edit</i>
@@ -70,6 +112,10 @@
             <i class="material-icons">question_answer</i>
             Manage Questions
           </button>
+          <button class="view-btn" [routerLink]="['/admin/results']" [queryParams]="{ examId: exam.id }">
+            <i class="material-icons">analytics</i>
+            View Results
+          </button>
         </div>
       </div>
     </div>
@@ -77,9 +123,11 @@
     <!-- Empty State -->
     <ng-template #emptyState>
       <div class="empty-state">
-        <i class="material-icons">assignment</i>
-        <h3>No Exams Yet</h3>
-        <p>Create your first exam to get started</p>
+        <div class="empty-state-icon">
+          <i class="material-icons">assignment</i>
+        </div>
+        <h3>No Exams Found</h3>
+        <p>{{ searchQuery ? 'No exams match your search criteria' : 'Create your first exam to get started' }}</p>
         <button class="add-btn" routerLink="/admin/exams/add">
           <i class="material-icons">add</i>
           Create New Exam

@@ -48,6 +48,17 @@
             </button>
     </div>
     <form [formGroup]="addForm" (ngSubmit)="addQuestion()" class="question-form">
+      <input type="hidden" formControlName="examId" [value]="currentExamId">
+      <div class="form-group" *ngIf="!currentExamId">
+        <label for="examId">Exam</label>
+        <select id="examId" formControlName="examId" class="form-control">
+          <option value="">Select an exam</option>
+          <option *ngFor="let exam of exams" [value]="exam.id">{{exam.title}}</option>
+        </select>
+        <div class="error-message" *ngIf="addForm.get('examId')?.invalid && addForm.get('examId')?.touched">
+          Please select an exam
+        </div>
+      </div>
       <div class="form-group">
         <label for="questionText">Question Text</label>
         <textarea 
@@ -56,6 +67,7 @@
           rows="3" 
           placeholder="Enter your question here..."
           [class.is-invalid]="addForm.get('text')?.invalid && addForm.get('text')?.touched"
+          required
         ></textarea>
         <div class="error-message" *ngIf="addForm.get('text')?.invalid && addForm.get('text')?.touched">
           Question text is required
@@ -73,12 +85,14 @@
                 [formControl]="getCorrectOptionControl(addForm)" 
                 class="correct-option"
                 [id]="'correct-' + i"
+                required
               >
               <input 
                 type="text" 
                 formControlName="text" 
                 [placeholder]="'Option ' + (i + 1)"
                 [class.is-invalid]="option.get('text')?.invalid && option.get('text')?.touched"
+                required
               >
             </div>
             <div class="error-message" *ngIf="option.get('text')?.invalid && option.get('text')?.touched">
@@ -96,6 +110,7 @@
           formControlName="marks" 
           min="1"
           [class.is-invalid]="addForm.get('marks')?.invalid && addForm.get('marks')?.touched"
+          required
         >
         <div class="error-message" *ngIf="addForm.get('marks')?.invalid && addForm.get('marks')?.touched">
           Marks must be at least 1
@@ -104,7 +119,10 @@
 
       <div class="form-actions">
         <button type="button" class="cancel-button" (click)="toggleAddForm()">Cancel</button>
-        <button type="submit" class="submit-button" [disabled]="!addForm.valid">Add Question</button>
+        <button type="submit" class="submit-button" [disabled]="!addForm.valid">
+          Add Question
+          <span *ngIf="!addForm.valid" class="validation-hint">(Please fill all required fields)</span>
+        </button>
       </div>
     </form>
   </div>
@@ -114,31 +132,75 @@
     <div class="questions-header">
       <h2>Questions List</h2>
       <div class="filters-container">
-        <div class="search-box">
-          <i class="fas fa-search"></i>
+        <!-- Exam Filter -->
+        <div class="filter-group">
+          <select 
+            [(ngModel)]="selectedExamId" 
+            (change)="filterByExam($event)"
+            class="filter-select"
+          >
+            <option value="">All Exams</option>
+            <option *ngFor="let exam of exams" [value]="exam.id">
+              {{exam.title}}
+            </option>
+          </select>
+        </div>
+
+        <!-- Marks Range Filter -->
+        <div class="filter-group marks-range">
+          <label>Marks Range:</label>
           <input 
-            type="text" 
-            placeholder="Search questions..." 
-            (input)="filterQuestions($event)"
-            [value]="searchTerm"
+            type="number" 
+            [(ngModel)]="minMarks" 
+            (input)="filterByMarksRange($event, 'min')"
+            placeholder="Min"
+            min="0"
+            class="marks-input"
+          >
+          <span>to</span>
+          <input 
+            type="number" 
+            [(ngModel)]="maxMarks" 
+            (input)="filterByMarksRange($event, 'max')"
+            placeholder="Max"
+            min="0"
+            class="marks-input"
           >
         </div>
-        <button class="clear-filters" (click)="clearFilters()" *ngIf="isFiltered">
+
+        <!-- Sort Options -->
+        <div class="filter-group">
+          <button 
+            class="sort-button" 
+            [class.active]="sortBy === 'marks'"
+            (click)="sortQuestions('marks')"
+          >
+            Sort by Marks
+            <i class="fas" [class.fa-sort-up]="sortBy === 'marks' && sortDirection === 'asc'"
+                         [class.fa-sort-down]="sortBy === 'marks' && sortDirection === 'desc'"
+                         [class.fa-sort]="sortBy !== 'marks'"></i>
+          </button>
+          <button 
+            class="sort-button" 
+            [class.active]="sortBy === 'exam'"
+            (click)="sortQuestions('exam')"
+          >
+            Sort by Exam
+            <i class="fas" [class.fa-sort-up]="sortBy === 'exam' && sortDirection === 'asc'"
+                         [class.fa-sort-down]="sortBy === 'exam' && sortDirection === 'desc'"
+                         [class.fa-sort]="sortBy !== 'exam'"></i>
+          </button>
+        </div>
+
+        <!-- Clear Filters -->
+        <button 
+          class="clear-filters-button" 
+          (click)="clearFilters()"
+          [disabled]="!isFiltered"
+        >
           <i class="fas fa-times"></i>
           Clear Filters
         </button>
-      </div>
-    </div>
-
-    <div class="filter-info" *ngIf="isFiltered">
-      <div class="active-filters">
-        <span class="filter-badge" *ngIf="searchTerm">
-          <i class="fas fa-search"></i>
-          Search: {{searchTerm}}
-        </span>
-      </div>
-      <div class="filter-stats">
-        Showing {{filteredQuestions.length}} of {{totalQuestions}} questions
       </div>
     </div>
 
@@ -208,13 +270,14 @@
                 <input 
                   type="radio" 
                   [value]="i" 
-                  formControlName="correctOption" 
+                  [formControl]="getCorrectOptionControl(editForm)" 
                   class="correct-option"
                   [id]="'edit-correct-' + i"
                 >
                 <input 
                   type="text" 
                   formControlName="text"
+                  [placeholder]="'Option ' + (i + 1)"
                   [class.is-invalid]="option.get('text')?.invalid && option.get('text')?.touched"
                 >
               </div>
